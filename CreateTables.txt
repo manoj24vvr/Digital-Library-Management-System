@@ -1,0 +1,83 @@
+create table member(
+memberID varchar(20) constraint UserID_is_primary primary key,
+Name varchar(50),
+Gender char(1) check(Gender in ('M','F')),
+Address varchar(100),
+Mobile_no char(10), 
+dues number(10) default (0),
+renewals_left number(3) default (4));
+
+create table book(
+bookID varchar(20) primary key,
+title varchar(50),
+publisher varchar(50),
+availability varchar(5) constraint availability_yes_or_no check(availability in ('Yes','No')),
+copies number(3));
+
+
+create table librarian(
+adminID varchar(20) constraint adminID_is_primary primary key,
+name varchar(50),
+Address varchar(50),
+mobile_no char(10));
+
+
+
+create table author(
+bookID varchar(20) references book(bookID),
+author varchar(50));
+
+create table book_records(
+userid varchar(20) references member(memberID),
+bookid varchar(20) references book(bookID), 
+date_of_issue date,
+due_date date, 
+date_of_return date,
+check((due_date > date_of_issue) and (date_of_return >= due_date)));
+
+
+create table recommendation(
+r_id varchar2 (20) primary key,
+userid varchar(20) not null references member(memberID),
+book_name varchar(50), 
+description varchar(100));
+
+
+
+----------------------TRIGGERS-----------------------------------------
+
+TRIGGER FOR UPDATING BOOKS ON ISSUE & RETURN
+
+/*------------- TRIGGER TO AUTOMATICALLY INCREMENT & DECREMENT THE NO_OF_BOOKS 
+FROM MEMBER & BOOK TABLE UPON ISSUE & RETURN ----------------*/
+
+CREATE OR REPLACE TRIGGER INCR_TRIGGER
+AFTER INSERT OR UPDATE ON Book
+FOR EACH ROW
+BEGIN
+ IF INSERTING THEN
+ UPDATE BOOK
+ SET copies=copies-1
+ WHERE BookID=:NEW.BookID;
+ UPDATE book_records
+ SET renewals_left=renewals_left-1
+ WHERE memberID=:NEW.memberID;
+ ELSIF UPDATING THEN 
+ UPDATE BOOK
+ SET copies=copies+1
+ WHERE BookID=:OLD.BookID;
+ UPDATE book_records
+ SET copies=copies-1
+ WHERE memberID=:OLD.memberID;
+ END IF;
+END;
+/
+
+
+
+drop table librarian;
+drop table author;
+drop table book_records;
+drop table recommendation;
+drop table member;
+drop table book;
